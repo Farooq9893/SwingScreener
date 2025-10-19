@@ -1,22 +1,54 @@
 import streamlit as st
 import gspread
+import pandas as pd
 from google.oauth2.service_account import Credentials
 
-st.set_page_config(page_title="Swing Screener", layout="wide")
+st.set_page_config(page_title="📊 Swing Screener", layout="wide")
+
+# ---- LOGIN SYSTEM ----
 st.title("📊 Swing Screener App")
 
-allowed_users = st.secrets["auth"]["emails"]
-user_email = st.text_input("Enter your Google email to access:")
-if user_email not in allowed_users:
-    st.error("❌ Access denied. Authorized users only.")
-    st.stop()
+st.write("### 🔐 Secure Login")
 
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
-client = gspread.authorize(creds)
-sheet = client.open("streamlit-service").sheet1
+# Allowed users (email + password) stored in secrets
+allowed_users = st.secrets["auth"].get("users", {})
 
-st.success("✅ Connected to Sheet successfully!")
-data = sheet.get_all_records()
-st.dataframe(data)
+email_input = st.text_input("📧 Enter your Email:")
+password_input = st.text_input("🔑 Enter your Password:", type="password")
 
+if st.button("Login"):
+    if email_input.lower().strip() in allowed_users and password_input == allowed_users[email_input.lower().strip()]:
+        st.success(f"✅ Access granted! Welcome, {email_input} 👋")
+
+        # ---- CONNECT TO GOOGLE SHEET ----
+        try:
+            creds = Credentials.from_service_account_info(
+                st.secrets["gcp_service_account"],
+                scopes=["https://www.googleapis.com/auth/spreadsheets"]
+            )
+            client = gspread.authorize(creds)
+            sheet = client.open("SwingData").sheet1  # 👈 apni sheet ka naam confirm karo
+            data = sheet.get_all_records()
+            df = pd.DataFrame(data)
+
+            st.success("✅ Connected to Google Sheet successfully!")
+
+            # ---- SEARCH FEATURE ----
+            st.write("### 🔍 Search in your Data")
+            search_query = st.text_input("Type to search (e.g., stock name, pattern, sector):")
+
+            if search_query:
+                filtered_df = df[df.apply(lambda row: row.astype(str).str.contains(search_query, case=False).any(), axis=1)]
+                if not filtered_df.empty:
+                    st.success(f"Found {len(filtered_df)} matching records:")
+                    st.dataframe(filtered_df)
+                else:
+                    st.warning("No matching results found.")
+            else:
+                st.dataframe(df)
+
+        except Exception as e:
+            st.error(f"❌ Error: {e}")
+
+    else:
+        st.error("❌ Invalid email or password. Please try again.")
