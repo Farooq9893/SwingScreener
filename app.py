@@ -25,7 +25,7 @@ def get_gspread_client_from_file():
     )
     return gspread.authorize(creds)
 
-def load_sheet_as_df(streamlit service: str) -> pd.DataFrame:
+def load_sheet_as_df("streamlit service: str") -> pd.DataFrame:
     client = get_gspread_client_from_file()
     sh = client.open("streamlit service")
     data = sh.sheet1.get_all_records()
@@ -143,6 +143,7 @@ else:
 
 st.write("---")
 st.caption("Make sure the service-account email (from your JSON) has Editor access to the Google Sheet.")
+
 
 
 
