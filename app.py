@@ -33,7 +33,7 @@ def get_gspread_client():
 
 def load_sheet_as_df(sheet_name: str) -> pd.DataFrame:
     client = get_gspread_client()
-    sh = client.open(sheet_name)
+    sh = client.open(streamlit-service)
     data = sh.sheet1.get_all_records()
     return pd.DataFrame(data)
 
@@ -90,7 +90,7 @@ sheet_name = "streamlit-service"
 if st.session_state.df is None:
     with st.spinner("Connecting to Google Sheet..."):
         try:
-            df = load_sheet_as_df(sheet_name)
+            df = load_sheet_as_df(streamlit-service)
             st.session_state.df = df
             st.success("✅ Connected to Google Sheet successfully!")
         except Exception as e:
@@ -120,3 +120,4 @@ else:
 
 st.write("---")
 st.caption("Ensure the service-account email has Editor access to the Google Sheet.")
+
