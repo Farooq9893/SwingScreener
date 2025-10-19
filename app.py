@@ -9,14 +9,28 @@ st.set_page_config(page_title="📊 Swing Screener", layout="wide")
 # ---------- Helper functions ----------
 
 def clean_private_key(key_raw: str) -> str:
-    """Fixes escaped \\n inside private_key text."""
+    """Fixes escaped \\n or malformed private_key text."""
     if not key_raw:
         return key_raw
+    key_raw = key_raw.strip().replace("\r", "")
+    # Convert escaped \n to real newlines
     if "\\n" in key_raw:
-        return key_raw.replace("\\n", "\n").strip()
-    return key_raw.strip()
+        key_raw = key_raw.replace("\\n", "\n")
+    # Ensure proper BEGIN/END formatting
+    if "-----BEGINPRIVATEKEY-----" in key_raw:
+        key_raw = key_raw.replace("-----BEGINPRIVATEKEY-----", "-----BEGIN PRIVATE KEY-----")
+    if "-----ENDPRIVATEKEY-----" in key_raw:
+        key_raw = key_raw.replace("-----ENDPRIVATEKEY-----", "-----END PRIVATE KEY-----")
+    # Add missing newlines if needed
+    if not key_raw.startswith("-----BEGIN PRIVATE KEY-----"):
+        key_raw = "-----BEGIN PRIVATE KEY-----\n" + key_raw
+    if not key_raw.endswith("-----END PRIVATE KEY-----"):
+        key_raw = key_raw + "\n-----END PRIVATE KEY-----"
+    return key_raw
+
 
 def get_gspread_client():
+    """Authorize Google Sheet access safely even if key formatting is off."""
     gcp = st.secrets.get("gcp_service_account")
     if not gcp:
         raise RuntimeError("gcp_service_account not found in secrets")
@@ -31,16 +45,19 @@ def get_gspread_client():
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     return gspread.authorize(creds)
 
+
 def load_sheet_as_df(sheet_name: str) -> pd.DataFrame:
     client = get_gspread_client()
-    sh = client.open(streamlit-service)
+    sh = client.open(sheet_name)
     data = sh.sheet1.get_all_records()
     return pd.DataFrame(data)
+
 
 def to_csv_bytes(df: pd.DataFrame) -> bytes:
     buf = io.BytesIO()
     df.to_csv(buf, index=False)
     return buf.getvalue()
+
 
 # ---------- Session defaults ----------
 
@@ -57,6 +74,7 @@ if not st.session_state.logged_in:
 
     email = st.text_input("📧 Email")
     password = st.text_input("🔑 Password", type="password")
+
     if st.button("Login"):
         auth = st.secrets.get("auth", {})
         allowed = auth.get("users", {})
@@ -73,8 +91,10 @@ if not st.session_state.logged_in:
     st.info("Enter credentials defined under [auth] in Streamlit Secrets.")
     st.stop()
 
+
 # ---------- Logged-in area ----------
 st.sidebar.write(f"👤 Signed in as **{st.session_state.username}**")
+
 if st.sidebar.button("Logout"):
     st.session_state.logged_in = False
     st.session_state.username = ""
@@ -90,7 +110,7 @@ sheet_name = "streamlit-service"
 if st.session_state.df is None:
     with st.spinner("Connecting to Google Sheet..."):
         try:
-            df = load_sheet_as_df("streamlit-service")
+            df = load_sheet_as_df(sheet_name)
             st.session_state.df = df
             st.success("✅ Connected to Google Sheet successfully!")
         except Exception as e:
@@ -120,5 +140,3 @@ else:
 
 st.write("---")
 st.caption("Ensure the service-account email has Editor access to the Google Sheet.")
-
-
