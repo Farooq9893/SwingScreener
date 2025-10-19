@@ -93,7 +93,7 @@ if not st.session_state.logged_in:
                 st.session_state.logged_in = True
                 st.session_state.username = user_key
                 st.success(f"✅ Access granted! Welcome, {email_input}")
-                st.experimental_rerun()
+               st.rerun()
             else:
                 st.error("❌ Invalid email or password. Please try again.")
     st.write("---")
@@ -156,3 +156,4 @@ else:
     st.write("- Service account email is shared with the Google Sheet (Editor permission).")
     st.write("- `gcp_service_account` is correctly present in Streamlit Secrets.")
     st.write("- If private_key contained `\\n` escapes, the app automatically cleans them.")
+
