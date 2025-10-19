@@ -1,54 +1,31 @@
-import streamlit as st
-import gspread
-import pandas as pd
-from google.oauth2.service_account import Credentials
+import base64
 
-st.set_page_config(page_title="📊 Swing Screener", layout="wide")
+# ---- CONNECT TO GOOGLE SHEET ----
+try:
+    key = st.secrets["gcp_service_account"]["private_key"]
+    # agar key me \n replace nahi hua ho to manually clean kar do
+    if "\\n" in key:
+        key = key.replace("\\n", "\n")
 
-# ---- LOGIN SYSTEM ----
-st.title("📊 Swing Screener App")
+    # manually validate base64 part to avoid padding error
+    try:
+        base64.b64decode("".join(key.splitlines()[1:-1] + ["=="]))
+    except Exception:
+        pass  # ignore; just ensures padding safe
 
-st.write("### 🔐 Secure Login")
+    creds_dict = dict(st.secrets["gcp_service_account"])
+    creds_dict["private_key"] = key
 
-# Allowed users (email + password) from secrets.toml
-allowed_users = st.secrets["auth"].get("users", {})
+    creds = Credentials.from_service_account_info(
+        creds_dict,
+        scopes=["https://www.googleapis.com/auth/spreadsheets"]
+    )
+    client = gspread.authorize(creds)
+    sheet = client.open("streamlit-service").sheet1
+    data = sheet.get_all_records()
+    df = pd.DataFrame(data)
 
-email_input = st.text_input("📧 Enter your Email:")
-password_input = st.text_input("🔑 Enter your Password:", type="password")
+    st.success("✅ Connected to Google Sheet successfully!")
 
-if st.button("Login"):
-    if email_input.lower().strip() in allowed_users and password_input == allowed_users[email_input.lower().strip()]:
-        st.success(f"✅ Access granted! Welcome, {email_input} 👋")
-
-        # ---- CONNECT TO GOOGLE SHEET ----
-        try:
-            creds = Credentials.from_service_account_info(
-                st.secrets["gcp_service_account"],
-                scopes=["https://www.googleapis.com/auth/spreadsheets"]
-            )
-            client = gspread.authorize(creds)
-            sheet = client.open("streamlit-service").sheet1  # 👈 your sheet name here
-            data = sheet.get_all_records()
-            df = pd.DataFrame(data)
-
-            st.success("✅ Connected to Google Sheet successfully!")
-
-            # ---- SEARCH FEATURE ----
-            st.write("### 🔍 Search your data below")
-            search_query = st.text_input("Type to search (e.g., stock name, pattern, sector):")
-
-            if search_query:
-                filtered_df = df[df.apply(lambda row: row.astype(str).str.contains(search_query, case=False).any(), axis=1)]
-                if not filtered_df.empty:
-                    st.success(f"Found {len(filtered_df)} matching records:")
-                    st.dataframe(filtered_df)
-                else:
-                    st.warning("No matching results found.")
-            else:
-                st.dataframe(df)
-
-        except Exception as e:
-            st.error(f"❌ Error connecting to Google Sheet: {e}")
-
-    else:
-        st.error("❌ Invalid email or password. Please try again.")
+except Exception as e:
+    st.error(f"❌ Error connecting to Google Sheet: {e}")
