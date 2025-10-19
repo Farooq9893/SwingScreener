@@ -90,7 +90,7 @@ sheet_name = "streamlit-service"
 if st.session_state.df is None:
     with st.spinner("Connecting to Google Sheet..."):
         try:
-            df = load_sheet_as_df(streamlit-service)
+            df = load_sheet_as_df("streamlit-service")
             st.session_state.df = df
             st.success("✅ Connected to Google Sheet successfully!")
         except Exception as e:
@@ -120,4 +120,5 @@ else:
 
 st.write("---")
 st.caption("Ensure the service-account email has Editor access to the Google Sheet.")
+
 
