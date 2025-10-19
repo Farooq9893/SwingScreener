@@ -120,5 +120,4 @@ with col_button:
 if do_search:  
     if not search_term:  
         st.warning("Please type a keyword then press Search.")  
-    else:  
-       
+    else:
