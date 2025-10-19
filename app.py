@@ -10,7 +10,7 @@ st.title("📊 Swing Screener App")
 
 st.write("### 🔐 Secure Login")
 
-# Allowed users (email + password) stored in secrets
+# Allowed users (email + password) from secrets.toml
 allowed_users = st.secrets["auth"].get("users", {})
 
 email_input = st.text_input("📧 Enter your Email:")
@@ -27,14 +27,14 @@ if st.button("Login"):
                 scopes=["https://www.googleapis.com/auth/spreadsheets"]
             )
             client = gspread.authorize(creds)
-            sheet = client.open("SwingData").sheet1  # 👈 apni sheet ka naam confirm karo
+            sheet = client.open("streamlit-service").sheet1  # 👈 your sheet name here
             data = sheet.get_all_records()
             df = pd.DataFrame(data)
 
             st.success("✅ Connected to Google Sheet successfully!")
 
             # ---- SEARCH FEATURE ----
-            st.write("### 🔍 Search in your Data")
+            st.write("### 🔍 Search your data below")
             search_query = st.text_input("Type to search (e.g., stock name, pattern, sector):")
 
             if search_query:
@@ -48,7 +48,7 @@ if st.button("Login"):
                 st.dataframe(df)
 
         except Exception as e:
-            st.error(f"❌ Error: {e}")
+            st.error(f"❌ Error connecting to Google Sheet: {e}")
 
     else:
         st.error("❌ Invalid email or password. Please try again.")
