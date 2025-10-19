@@ -14,8 +14,9 @@ if user_email not in allowed_users:
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
 client = gspread.authorize(creds)
-sheet = client.open("SwingData").sheet1
+sheet = client.open("streamlit-service").sheet1
 
 st.success("✅ Connected to Sheet successfully!")
 data = sheet.get_all_records()
 st.dataframe(data)
+
