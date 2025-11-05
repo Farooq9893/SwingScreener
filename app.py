@@ -94,7 +94,7 @@ SHEET_NAME = "streamlit_service"
 if st.session_state.df is None:
     with st.spinner("Connecting to Google Sheet..."):
         try:
-            df = load_sheet_as_df(streamlit_service)
+            df = load_sheet_as_df(SHEET_NAME)
             st.session_state.df = df
             st.success("✅ Connected to Google Sheet successfully!")
         except Exception as e:
@@ -139,4 +139,5 @@ if do_search:
             )
 else:
     st.dataframe(df, use_container_width=True)
+
 
