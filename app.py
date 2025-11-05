@@ -4,6 +4,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 import io
 import os
+import json
 
 st.set_page_config(page_title="📊 Swing Screener", layout="wide")
 
@@ -14,8 +15,15 @@ def get_gspread_client_from_file():
     cred_path = os.path.join(os.path.dirname(__file__), "secrets", "credentials.json")
     if not os.path.exists(cred_path):
         raise FileNotFoundError(f"Credentials file not found: {cred_path}")
-    creds = Credentials.from_service_account_file(
-        cred_path,
+
+    # Fix for invalid JWT Signature — replace escaped newlines
+    with open(cred_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+        if "\\n" in data["private_key"]:
+            data["private_key"] = data["private_key"].replace("\\n", "\n")
+
+    creds = Credentials.from_service_account_info(
+        data,
         scopes=[
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive",
@@ -139,5 +147,3 @@ if do_search:
             )
 else:
     st.dataframe(df, use_container_width=True)
-
-
