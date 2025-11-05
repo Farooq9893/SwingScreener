@@ -52,7 +52,7 @@ if "logged_in" not in st.session_state:
     st.session_state.user_email = ""
     st.session_state.df = None
 
-st.title("📊 Swing Screener — Login")
+st.title("📊 Swing Screener")
 
 # ----------------------------
 # Login screen
@@ -147,4 +147,5 @@ if do_search:
             )
 else:
     st.dataframe(df, use_container_width=True)
+
 
