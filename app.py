@@ -88,13 +88,13 @@ if st.sidebar.button("🔄 Reload Sheet Data"):
     st.rerun()
 
 # Hard-coded sheet name
-SHEET_NAME = "streamlit-service"
+SHEET_NAME = "streamlit_service"
 
 # Load sheet once into session_state
 if st.session_state.df is None:
     with st.spinner("Connecting to Google Sheet..."):
         try:
-            df = load_sheet_as_df(SHEET_NAME)
+            df = load_sheet_as_df(streamlit_service)
             st.session_state.df = df
             st.success("✅ Connected to Google Sheet successfully!")
         except Exception as e:
@@ -139,3 +139,4 @@ if do_search:
             )
 else:
     st.dataframe(df, use_container_width=True)
+
