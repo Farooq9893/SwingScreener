@@ -16,11 +16,12 @@ def get_gspread_client_from_file():
     if not os.path.exists(cred_path):
         raise FileNotFoundError(f"Credentials file not found: {cred_path}")
 
-    # Fix for invalid JWT Signature — replace escaped newlines
+    # Load JSON and fix newline escapes
     with open(cred_path, "r", encoding="utf-8") as f:
         data = json.load(f)
-        if "\\n" in data["private_key"]:
-            data["private_key"] = data["private_key"].replace("\\n", "\n")
+    # If the private_key has literal "\\n", replace with "\n"
+    if isinstance(data.get("private_key"), str) and "\\n" in data["private_key"]:
+        data["private_key"] = data["private_key"].replace("\\n", "\n")
 
     creds = Credentials.from_service_account_info(
         data,
@@ -29,13 +30,14 @@ def get_gspread_client_from_file():
             "https://www.googleapis.com/auth/drive",
         ],
     )
-    return gspread.authorize(creds)
+    client = gspread.authorize(creds)
+    return client
 
 def load_sheet_as_df(sheet_name: str) -> pd.DataFrame:
     client = get_gspread_client_from_file()
-    sh = client.open(sheet_name)
-    data = sh.sheet1.get_all_records()
-    return pd.DataFrame(data)
+    sheet = client.open(sheet_name).sheet1
+    records = sheet.get_all_records()
+    return pd.DataFrame(records)
 
 def df_to_csv_bytes(df: pd.DataFrame) -> bytes:
     buf = io.BytesIO()
@@ -58,7 +60,7 @@ st.title("📊 Swing Screener — Login + Search")
 if not st.session_state.logged_in:
     st.subheader("🔐 Login (Email + Password)")
 
-    allowed_users = {"farooq9893@gmail.com": "12345"}  # Default user
+    allowed_users = {"farooq9893@gmail.com": "12345"}  # Default user list
 
     email = st.text_input("📧 Email", placeholder="your.email@gmail.com")
     password = st.text_input("🔑 Password", type="password")
@@ -77,7 +79,6 @@ if not st.session_state.logged_in:
     with col2:
         if st.button("Cancel"):
             st.info("Login cancelled.")
-
     st.stop()
 
 # ----------------------------
@@ -114,7 +115,6 @@ df = st.session_state.df.copy()
 
 # ----------------------------
 # Search feature
-# ----------------------------
 st.write("### 🔍 Search the Sheet")
 
 col_search, col_button = st.columns([4, 1])
